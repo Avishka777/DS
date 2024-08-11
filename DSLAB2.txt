@@ -1,0 +1,124 @@
+create type dept_t as object( 
+    DEPTNO char(3), 
+    DEPTNAME varchar(36), 
+    MGRNO ref emp_t, 
+    ADMRDEPT ref dept_t 
+)
+/
+
+
+create type emp_t as object( 
+    EMPNO char(6), 
+    FIRSTNAME varchar(12), 
+    LASTNAME varchar(12), 
+    WORKDEPT ref dept_t, 
+    SEX char(1), 
+    BIRTHDATE date, 
+    SALARY number(8,2) 
+)
+/
+
+
+create table ORDEPT of dept_t( 
+    DEPTNO primary key not null, 
+    DEPTNAME not null 
+)
+/
+
+create table OREMP of emp_t( 
+    EMPNO not null primary key, 
+    FIRSTNAME not null, 
+    LASTNAME not null     
+)
+/
+
+insert into ORDEPT values (dept_t('A00','SPIFFY COMPUTER SERVICE DIV',null, null))
+/
+insert into ORDEPT values (dept_t('B01','PLANNING',null, (select ref(d) from ORDEPT d where d.DEPTNO = 'A00')))
+/
+insert into ORDEPT values(dept_t('C01', 'INFORMATION CENTRE', null,(select ref(d) from ORDEPT d where d.DEPTNO = 'A00') ))
+/
+insert into ORDEPT values(dept_t('D01', 'DEVELOPMENT CENTRE', null, (select ref(d) from ORDEPT d where d.DEPTNO = 'C01')))
+/
+
+update ORDEPT d
+set d.ADMRDEPT =(select ref(d) from ORDEPT d where d.DEPTNO='A00') 
+where d.DEPTNO='A00'
+/
+
+insert into OREMP values (emp_t('000010', 'CHRISTINE', 'HAAS', (select ref(d) from ORDEPT d where d.DEPTNO ='A00'), 'F', TO_DATE('14-AUG-1953', 'DD-MON-YYYY'), 72750))
+/
+insert into OREMP values (emp_t('000020', 'MICHAEL', 'THOMPSON', (select ref(d) from ORDEPT d where d.DEPTNO ='B01'), 'M', TO_DATE('02-FEB-1968', 'DD-MON-YYYY'), 61250))
+/
+insert into OREMP values (emp_t('000030', 'SALLY', 'KWAN', (select ref(d) from ORDEPT d where d.DEPTNO ='C01'), 'F', TO_DATE('11-MAY-1971', 'DD-MON-YYYY'), 58250))
+/
+insert into OREMP values (emp_t('000060', 'IRVING', 'STERN', (select ref(d) from ORDEPT d where d.DEPTNO ='D01'), 'M', TO_DATE('07-JUL-1965', 'DD-MON-YYYY'), 55555))
+/
+insert into OREMP values (emp_t('000070', 'EVA', 'PULASKI', (select ref(d) from ORDEPT d where d.DEPTNO ='D01'), 'F', TO_DATE('26-MAY-1973', 'DD-MON-YYYY'), 56170))
+/
+insert into OREMP values (emp_t('000050', 'JOHN', 'GEYER', (select ref(d) from ORDEPT d where d.DEPTNO ='C01'), 'M', TO_DATE('15-SEP-1955', 'DD-MON-YYYY'), 60175))
+/
+insert into OREMP values (emp_t('000090', 'EILEEN', 'HENDERSON', (select ref(d) from ORDEPT d where d.DEPTNO ='B01'), 'F', TO_DATE('15-MAY-1961', 'DD-MON-YYYY'), 49750))
+/
+insert into OREMP values (emp_t('000100', 'THEODORE', 'SPENSER', (select ref(d) from ORDEPT d where d.DEPTNO ='B01'), 'M', TO_DATE('18-DEC-1976', 'DD-MON-YYYY'), 46150))
+/
+
+
+
+update ORDEPT d
+set d.MGRNO = (select ref(e) from OREMP e where e.EMPNO = '000010')
+where d.DEPTNO = 'A00'
+/
+
+update ORDEPT d
+set d.MGRNO = (select ref(e) from OREMP e where e.EMPNO = '000020')
+where d.DEPTNO = 'B01'
+/
+
+update ORDEPT d
+set d.MGRNO = (select ref(e) from OREMP e where e.EMPNO = '000030')
+where d.DEPTNO = 'C01'
+/
+
+update ORDEPT d
+set d.MGRNO = (select ref(e) from OREMP e where e.EMPNO = '000060')
+where d.DEPTNO = 'D01'
+/
+
+
+select * from ORDEPT
+
+--Q2
+--a
+select d.DEPTNAME, d.MGRNO.LASTNAME
+from ORDEPT d
+/
+
+--b
+select e.EMPNO, e.LASTNAME, e.WORKDEPT.DEPTNAME 
+from OREMP e 
+/
+
+--c
+select d.DEPTNO, d.DEPTNAME, d.ADMRDEPT.DEPTNAME as Admin_Dept
+from ORDEPT d
+/
+
+--d
+select d.DEPTNO, d.DEPTNAME, d.ADMRDEPT.DEPTNAME as Admin_Dept, d.ADMRDEPT.MGRNO.LASTNAME as Manager
+from ORDEPT d
+/
+
+--e
+select e.EMPNO, e.FIRSTNAME, e.LASTNAME, e.SALARY, e.WORKDEPT.MGRNO.LASTNAME as MAnager_name, e.WORKDEPT.MGRNO.SALARY as Manager_Sal
+from OREMP e
+/
+
+--f
+select d.DEPTNO, d.DEPTNAME, e.SEX, AVG(e.SALARY)
+from ORDEPT d, OREMP e
+where e.WORKDEPT.DEPTNO = d.DEPTNO
+group by d.DEPTNO, d.DEPTNAME, e.SEX
+/
+
+
