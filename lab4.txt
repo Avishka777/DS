@@ -1,0 +1,146 @@
+1)
+a)
+alter type stock_ty
+add member function yield return float
+cascade
+/
+
+create or replace type body stock_ty as
+member function yield return float is
+  begin
+      return ((self.Idividend/self.cprice)*100); 
+  end; 
+end;
+
+b)
+alter type stock_ty
+add member function AUDtoUSD(rate float) return float
+cascade
+/
+
+create or replace type body stock_ty as
+member function yield return float is
+       begin
+            return ((self.Idividend/self.cprice)*100); 
+       end yield; 
+member function AUDtoUSD(rate float) return float is
+       begin
+            return (self.cprice)*rate); 
+       end AUDtoUSD;
+end;
+
+c)
+alter type stock_ty
+add member function CountExchanges return INTEGER
+cascade
+/
+
+create or replace type body stock_ty as
+member function yield return float is
+       begin
+            return ((self.Idividend/self.cprice)*100);
+       end yield;
+member function AUDtoUSD(rate float) return float is
+       begin
+            return (self.cprice * rate);
+       end AUDtoUSD;
+member function countExchanges return INTEGER is
+       ecount INTEGER;
+       begin
+            select COUNT(e.column_value) into ecount
+            from table(self.exchanges) e;
+            return ecount;
+       end countExchanges;
+end;
+
+d)
+alter type client_ty
+add member function calcPurchase return float 
+cascade
+/  
+
+create or replace type body client_ty as
+member function calcpurchase return float is
+        pvalue float;
+        begin
+            select SUM(i.pprice*i.qty) INTO pvalue
+            from table(self.investment) i; 
+            return pvalue;
+        end calcPurchase;
+end;
+
+e)
+alter type client_ty
+add member function calcProfit return float
+cascade
+/
+
+create or replace type body client_ty as
+member function calcpurchase return float is
+        pvalue float;
+        begin
+            select SUM(i.pprice*i.qty) INTO pvalue
+            from table(self.investment) i;
+            return pvalue;
+        end calcPurchase;
+member function calcProfit return float is
+       profit float;
+       begin
+            select SUM((i.company.cprice-i.pprice)*i.qty) INTO profit
+            from table(self.investment) i;
+            return profit;
+       end;
+end;
+
+
+
+
+2)
+
+a)
+select s.company,e.column_value,s.yield(),s.AUDtoUSD(0.74)
+from stock_table s,table(s.exchanges) e 
+
+b)
+select s.company,s.cprice,s.countExchanges()
+from stock_table s
+where s.countExchanges() >1
+
+c)
+select distinct c.name,t.company.company,t.company.yield(),t.company.cprice,t.company.eps
+from client_table c,table(c.investment) t
+
+d)
+select c.name,c.calcPurchase()
+from  client_table c
+
+e)
+select c.name,c.calcProfit()
+from client_table c
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+ 
+
+
+
