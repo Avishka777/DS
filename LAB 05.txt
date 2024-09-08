@@ -1,0 +1,203 @@
+--Task1
+--a
+create type student_type as object(
+    sid char(8),
+    sname varchar(15),
+    phone char(10)
+)not final
+/
+
+alter type student_type not final
+
+create type ug_type under student_type(
+    gpa real,
+    deptid char(6),
+    course varchar(10)
+) not final
+/
+
+create table student of student_type(
+    sid primary key
+)
+/
+
+
+--b
+insert into student values(ug_type('12354326', 'Janet Paeres', null, 3.2, 'CS01', 'InfoTech'))
+/
+
+--c
+select s.sid, s.sname
+from student s
+where treat(value(s) as ug_type).deptid='CS01'
+/
+
+
+
+--Task 2
+--a
+create type Customer_t as object(
+    cid char(6),
+    name varchar(15),
+    birthdate date,
+    phone char(10),
+    address varchar(50)
+)not final
+/
+
+create type Car_t as object(
+    regno char(9),
+    make varchar(12),
+    model varchar(10),
+    mdate date,
+    ownder Customer_t,
+    value number(8,2)
+) not final
+/
+
+create type Claim_t as object(
+    clamno char(12),
+    cdate date,
+    amount number(8,2),
+    claimant Customer_t
+)
+/
+
+create type claim_ntab as table of claim_t
+/
+
+create type Ploicy_t as object (
+    pid char(7),
+    sdate date,
+    edate date,
+    incar ref Car_t,
+    premium number(6,2),
+    claims claim_ntab 
+)
+/
+
+create table Customers of Customer_t(
+    cid primary key
+)
+/
+
+create table Car of Car_t(
+    regno primary key
+)
+/
+
+create table Policies of Ploicy_t(
+    pid primary key
+    
+)nested table claims store as claims_ntable
+/
+
+drop table Customers
+INSERT INTO Customers VALUES (Customer_t('C10001', 'Alice Smith', TO_DATE('1995-06-15', 'YYYY-MM-DD'), '0123456789', '123 Maple St, Springfield'));
+INSERT INTO Customers VALUES (Customer_t('C10002', 'Bob Johnson', TO_DATE('1999-08-23', 'YYYY-MM-DD'), '0987654321', '456 Oak St, Springfield'));
+INSERT INTO Customers VALUES (Customer_t('C10003', 'Charlie Brown', TO_DATE('2002-11-05', 'YYYY-MM-DD'), '0123987654', '789 Pine St, Springfield'));
+INSERT INTO Customers VALUES (Customer_t('C10004', 'Diana Prince', TO_DATE('1997-01-30', 'YYYY-MM-DD'), '0112233445', '101 Elm St, Metropolis'));
+/
+
+
+INSERT INTO Car VALUES (Car_t('REG123456', 'Toyota', 'Camry', TO_DATE('2015-05-20', 'YYYY-MM-DD'), 
+                               Customer_t('C10001', 'Alice Smith', TO_DATE('1995-06-15', 'YYYY-MM-DD'), '0123456789', '123 Maple St, Springfield'), 15000.00));
+INSERT INTO Car VALUES (Car_t('REG654321', 'Honda', 'Civic', TO_DATE('2018-08-17', 'YYYY-MM-DD'), 
+                               Customer_t('C10002', 'Bob Johnson', TO_DATE('1999-08-23', 'YYYY-MM-DD'), '0987654321', '456 Oak St, Springfield'), 12000.00));
+INSERT INTO Car VALUES (Car_t('REG112233', 'Ford', 'Focus', TO_DATE('2017-03-25', 'YYYY-MM-DD'), 
+                               Customer_t('C10003', 'Charlie Brown', TO_DATE('2002-11-05', 'YYYY-MM-DD'), '0123987654', '789 Pine St, Springfield'), 13000.00));
+INSERT INTO Car VALUES (Car_t('REG445566', 'Nissan', 'Altima', TO_DATE('2016-11-15', 'YYYY-MM-DD'), 
+                               Customer_t('C10004', 'Diana Prince', TO_DATE('1997-01-30', 'YYYY-MM-DD'), '0112233445', '101 Elm St, Metropolis'), 14000.00));
+/
+
+
+-- Insert data for the first policy
+INSERT INTO Policies VALUES (Ploicy_t('P123456', TO_DATE('2023-01-01', 'YYYY-MM-DD'), TO_DATE('2024-01-01', 'YYYY-MM-DD'), 
+                                      (SELECT REF(c) FROM Car c WHERE c.regno = 'REG123456'), 500.00, 
+                                      claim_ntab(Claim_t('CLAIM001', TO_DATE('2023-06-01', 'YYYY-MM-DD'), 300.00, 
+                                                        Customer_t('C10001', 'Alice Smith', TO_DATE('1995-06-15', 'YYYY-MM-DD'), '0123456789', '123 Maple St, Springfield')))));
+
+-- Insert data for the second policy
+INSERT INTO Policies VALUES (Ploicy_t('P654321', TO_DATE('2023-02-01', 'YYYY-MM-DD'), TO_DATE('2024-02-01', 'YYYY-MM-DD'), 
+                                      (SELECT REF(c) FROM Car c WHERE c.regno = 'REG654321'), 450.00, 
+                                      claim_ntab(Claim_t('CLAIM002', TO_DATE('2023-07-01', 'YYYY-MM-DD'), 500.00, 
+                                                        Customer_t('C10002', 'Bob Johnson', TO_DATE('1999-08-23', 'YYYY-MM-DD'), '0987654321', '456 Oak St, Springfield')))));
+
+-- Insert data for the third policy
+INSERT INTO Policies VALUES (Ploicy_t('P112233', TO_DATE('2023-03-01', 'YYYY-MM-DD'), TO_DATE('2024-03-01', 'YYYY-MM-DD'), 
+                                      (SELECT REF(c) FROM Car c WHERE c.regno = 'REG112233'), 480.00, 
+                                      claim_ntab(Claim_t('CLAIM003', TO_DATE('2023-08-01', 'YYYY-MM-DD'), 250.00, 
+                                                        Customer_t('C10003', 'Charlie Brown', TO_DATE('2002-11-05', 'YYYY-MM-DD'), '0123987654', '789 Pine St, Springfield')))));
+
+-- Insert data for the fourth policy
+INSERT INTO Policies VALUES (Ploicy_t('P445566', TO_DATE('2023-04-01', 'YYYY-MM-DD'), TO_DATE('2024-04-01', 'YYYY-MM-DD'), 
+                                      (SELECT REF(c) FROM Car c WHERE c.regno = 'REG445566'), 470.00, 
+                                      claim_ntab(Claim_t('CLAIM004', TO_DATE('2023-09-01', 'YYYY-MM-DD'), 400.00, 
+                                                        Customer_t('C10004', 'Diana Prince', TO_DATE('1997-01-30', 'YYYY-MM-DD'), '0112233445', '101 Elm St, Metropolis')))));
+/
+
+
+
+--a
+--i
+select AVG(p.premium)
+from Policies p
+where MONTHS_BETWEEN(SYSDATE, p.incar.ownder.birthdate) / 12 between 20 and 25
+
+
+select p.incar.make, sum(c.amount)
+from Policies p, table(p.claims) c
+where p.edate between TO_DATE('2004-01-01', 'YYYY-MM-DD') and  TO_DATE('2004-12-31', 'YYYY-MM-DD')
+group by p.incar.make
+/
+
+
+--b
+INSERT INTO TABLE (
+    SELECT p.claims 
+    FROM Policies p 
+    WHERE p.pid = 'SL12354'
+) 
+
+
+--c
+CREATE OR REPLACE FUNCTION calculate_renewal_premium(pid CHAR)
+RETURN NUMBER
+IS
+    total_claim NUMBER(8,2);
+    current_premium NUMBER(6,2);
+    new_premium NUMBER(6,2);
+BEGIN
+    SELECT SUM(c.amount)
+    INTO total_claim
+    FROM Policies p, TABLE(p.claims) c
+    WHERE p.pid = pid;
+    
+    SELECT p.premium
+    INTO current_premium
+    FROM Policies p
+    WHERE p.pid = pid;
+    
+    IF total_claim IS NULL OR total_claim < 1000 THEN
+        new_premium := current_premium;
+    ELSE
+        new_premium := current_premium * 1.20;
+    END IF;
+    
+    RETURN new_premium;
+END;
+/
+
+
+
+SELECT calculate_renewal_premium(p.pid)
+FROM Policies p
+WHERE p.incar.regno = 'REG445566'
+/
+VALUES (
+    Claim_t('001', TO_DATE('2004-07-12', 'YYYY-MM-DD'), 2000,
+            (SELECT REF(c) 
+             FROM Customers c 
+             WHERE c.cid = 'S25431')
+           )
+);
